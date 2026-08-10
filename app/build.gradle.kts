@@ -33,7 +33,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("com.google.auth:google-auth-oauth2:0.26.0")
-    implementation("com.google.apis:google-api-services-photoslibrary:v1-rev20220815-1.32.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }

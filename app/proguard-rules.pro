@@ -1,0 +1,2 @@
+-keep class com.photossync.** { *; }
+-dontwarn com.google.**

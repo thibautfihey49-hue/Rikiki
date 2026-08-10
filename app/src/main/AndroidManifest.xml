@@ -25,7 +25,6 @@
 
         <service
             android:name=".SyncService"
-            android:foregroundServiceType="dataSync"
             android:exported="false" />
     </application>
 

@@ -31,9 +31,9 @@
         android:id="@+id/davUrl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="URL WebDAV (ex: https://...) "
+        android:hint="URL WebDAV (ex: https://...)"
         android:textColor="#FFFFFF"
-        android:hintTextColor="#888888"
+        android:textColorHint="#888888"
         android:background="#2A2A2A"
         android:padding="14dp"
         android:layout_marginBottom="12dp"/>
@@ -44,7 +44,7 @@
         android:layout_height="wrap_content"
         android:hint="Identifiant / Email"
         android:textColor="#FFFFFF"
-        android:hintTextColor="#888888"
+        android:textColorHint="#888888"
         android:background="#2A2A2A"
         android:padding="14dp"
         android:layout_marginBottom="12dp"/>
@@ -56,7 +56,7 @@
         android:hint="Mot de passe"
         android:inputType="textPassword"
         android:textColor="#FFFFFF"
-        android:hintTextColor="#888888"
+        android:textColorHint="#888888"
         android:background="#2A2A2A"
         android:padding="14dp"
         android:layout_marginBottom="20dp"/>

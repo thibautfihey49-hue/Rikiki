@@ -4,7 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:gravity="center_horizontal">
+    android:gravity="center_horizontal"
+    android:background="#121212">
 
     <TextView
         android:layout_width="wrap_content"
@@ -12,33 +13,69 @@
         android:text="📸 PhotosSync"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:layout_marginBottom="20dp"/>
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="24dp"/>
 
     <TextView
         android:id="@+id/statut"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="⏳ Prêt"
+        android:text="🔐 Configurez votre serveur WebDAV"
         android:textSize="14sp"
         android:padding="16dp"
-        android:background="#F5F5F5"
+        android:background="#2A2A2A"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/davUrl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="URL WebDAV (ex: https://...) "
+        android:textColor="#FFFFFF"
+        android:hintTextColor="#888888"
+        android:background="#2A2A2A"
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"/>
+
+    <EditText
+        android:id="@+id/davUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Identifiant / Email"
+        android:textColor="#FFFFFF"
+        android:hintTextColor="#888888"
+        android:background="#2A2A2A"
+        android:padding="14dp"
+        android:layout_marginBottom="12dp"/>
+
+    <EditText
+        android:id="@+id/davPass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Mot de passe"
+        android:inputType="textPassword"
+        android:textColor="#FFFFFF"
+        android:hintTextColor="#888888"
+        android:background="#2A2A2A"
+        android:padding="14dp"
         android:layout_marginBottom="20dp"/>
 
     <Button
-        android:id="@+id/btnConnect"
+        android:id="@+id/btnTest"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="🔐 1. Connecter Google"
-        android:backgroundTint="#2196F3"
+        android:layout_height="55dp"
+        android:text="🔌 Tester la connexion"
+        android:backgroundTint="#FF9800"
         android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"/>
+        android:textSize="16sp"
+        android:layout_marginBottom="12dp"/>
 
     <Button
         android:id="@+id/btnStart"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="▶️ 2. Démarrer la synchro"
+        android:text="▶️ Démarrer la synchro"
         android:backgroundTint="#4CAF50"
         android:textColor="#FFFFFF"
         android:textSize="18sp"/>

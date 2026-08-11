@@ -2,39 +2,103 @@ package com.photossync
 
 import android.Manifest
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.thegrizzlylabs.sardineandroid.Sardine
+import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var statut: TextView
-    private lateinit var btnConnect: Button
+    private lateinit var davUrl: EditText
+    private lateinit var davUser: EditText
+    private lateinit var davPass: EditText
+    private lateinit var btnTest: Button
     private lateinit var btnStart: Button
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        prefs = getSharedPreferences("PhotosSync", MODE_PRIVATE)
         statut = findViewById(R.id.statut)
-        btnConnect = findViewById(R.id.btnConnect)
+        davUrl = findViewById(R.id.davUrl)
+        davUser = findViewById(R.id.davUser)
+        davPass = findViewById(R.id.davPass)
+        btnTest = findViewById(R.id.btnTest)
         btnStart = findViewById(R.id.btnStart)
+
+        // Charger la config sauvegardée
+        davUrl.setText(prefs.getString("dav_url", ""))
+        davUser.setText(prefs.getString("dav_user", ""))
+        davPass.setText(prefs.getString("dav_pass", ""))
 
         demanderPermissions()
 
-        btnConnect.setOnClickListener {
-            statut.text = "🔐 Connexion Google à configurer\n\n→ Il faut créer un projet sur Google Cloud Console\n→ Activer l'API Google Photos\n→ Ajouter votre empreinte SHA-1\n→ Déposer le Client ID dans l'appli"
+        btnTest.setOnClickListener {
+            testerConnexion()
         }
 
         btnStart.setOnClickListener {
+            sauvegarderConfig()
             val intent = Intent(this, SyncService::class.java)
             startService(intent)
-            statut.text = "🔄 Surveillance active !\n\n📂 Surveille : DCIM, Pictures, Movies, Download\n\n⚠️ En attente de connexion Google pour l'envoi"
+            statut.text = "🔄 Surveillance active !\n\n📂 DCIM, Pictures, Movies, Download\n📤 Envoi vers WebDAV automatique"
+        }
+    }
+
+    private fun sauvegarderConfig() {
+        prefs.edit()
+            .putString("dav_url", davUrl.text.toString().trim())
+            .putString("dav_user", davUser.text.toString().trim())
+            .putString("dav_pass", davPass.text.toString().trim())
+            .apply()
+    }
+
+    private fun testerConnexion() {
+        sauvegarderConfig()
+        val url = davUrl.text.toString().trim()
+        val user = davUser.text.toString().trim()
+        val pass = davPass.text.toString().trim()
+
+        if (url.isEmpty() || user.isEmpty() || pass.isEmpty()) {
+            statut.text = "⚠️ Remplissez tous les champs"
+            return
+        }
+
+        statut.text = "🔄 Test de la connexion..."
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val sardine: Sardine = OkHttpSardine()
+                sardine.setCredentials(user, pass)
+                val exists = sardine.exists(url)
+                withContext(Dispatchers.Main) {
+                    statut.text = if (exists) {
+                        "✅ Connexion RÉUSSIE !\n\nServeur WebDAV opérationnel"
+                    } else {
+                        "⚠️ Connexion établie mais dossier introuvable"
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    statut.text = "❌ Erreur : ${e.message}"
+                }
+            }
         }
     }
 

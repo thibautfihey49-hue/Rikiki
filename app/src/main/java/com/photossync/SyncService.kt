@@ -10,8 +10,10 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.thegrizzlylabs.sardineandroid.Sardine
-import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
+import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 class SyncService : Service() {
@@ -20,6 +22,7 @@ class SyncService : Service() {
     private val dossiers = listOf("/sdcard/DCIM", "/sdcard/Pictures", "/sdcard/Movies", "/sdcard/Download")
     private val observers = mutableListOf<FileObserver>()
     private lateinit var prefs: SharedPreferences
+    private val client = okhttp3.OkHttpClient()
 
     override fun onCreate() {
         super.onCreate()
@@ -28,22 +31,10 @@ class SyncService : Service() {
         surveillerTout()
     }
 
-    private fun getSardine(): Sardine? {
-        val url = prefs.getString("dav_url", "") ?: return null
-        val user = prefs.getString("dav_user", "") ?: return null
-        val pass = prefs.getString("dav_pass", "") ?: return null
-
-        return if (url.isNotEmpty() && user.isNotEmpty() && pass.isNotEmpty()) {
-            OkHttpSardine().apply { setCredentials(user, pass) }
-        } else null
-    }
-
     private fun surveillerTout() {
         dossiers.forEach { chemin ->
             val dossier = File(chemin)
-            if (dossier.exists()) {
-                observerDossier(dossier)
-            }
+            if (dossier.exists()) observerDossier(dossier)
         }
     }
 
@@ -52,12 +43,9 @@ class SyncService : Service() {
             override fun onEvent(event: Int, chemin: String?) {
                 chemin ?: return
                 val fichier = File(dossier.absolutePath, chemin)
-                if (fichier.isDirectory) {
-                    observerDossier(fichier)
-                } else if (estMedia(fichier.name)) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        uploaderFichier(fichier)
-                    }
+                if (fichier.isDirectory) observerDossier(fichier)
+                else if (estMedia(fichier.name)) {
+                    CoroutineScope(Dispatchers.IO).launch { uploaderFichier(fichier) }
                 }
             }
         }
@@ -71,18 +59,36 @@ class SyncService : Service() {
     }
 
     private fun uploaderFichier(fichier: File) {
-        val sardine = getSardine()
         val urlBase = prefs.getString("dav_url", "") ?: return
+        val user = prefs.getString("dav_user", "") ?: return
+        val pass = prefs.getString("dav_pass", "") ?: return
 
-        if (sardine == null) {
+        if (urlBase.isEmpty() || user.isEmpty() || pass.isEmpty()) {
             Log.d("PhotosSync", "⚠️ WebDAV non configuré : ${fichier.name}")
             return
         }
 
         try {
             val urlDest = if (urlBase.endsWith("/")) "$urlBase${fichier.name}" else "$urlBase/${fichier.name}"
-            sardine.put(urlDest, fichier)
-            Log.d("PhotosSync", "✅ Envoyé : ${fichier.name}")
+            val mediaType = when {
+                fichier.name.endsWith(".jpg", true) -> "image/jpeg"
+                fichier.name.endsWith(".png", true) -> "image/png"
+                fichier.name.endsWith(".mp4", true) -> "video/mp4"
+                else -> "application/octet-stream"
+            }.toMediaType()
+
+            val request = Request.Builder()
+                .url(urlDest)
+                .addHeader("Authorization", Credentials.basic(user, pass))
+                .put(fichier.asRequestBody(mediaType))
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                Log.d("PhotosSync", "✅ Envoyé : ${fichier.name}")
+            } else {
+                Log.e("PhotosSync", "⚠️ ${response.code} : ${fichier.name}")
+            }
         } catch (e: Exception) {
             Log.e("PhotosSync", "❌ Échec ${fichier.name} : ${e.message}")
         }

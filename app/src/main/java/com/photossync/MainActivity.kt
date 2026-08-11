@@ -16,9 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.thegrizzlylabs.sardineandroid.Sardine
-import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
-import java.io.File
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +30,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnTest: Button
     private lateinit var btnStart: Button
     private lateinit var prefs: SharedPreferences
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,22 +47,17 @@ class MainActivity : AppCompatActivity() {
         btnTest = findViewById(R.id.btnTest)
         btnStart = findViewById(R.id.btnStart)
 
-        // Charger la config sauvegardée
         davUrl.setText(prefs.getString("dav_url", ""))
         davUser.setText(prefs.getString("dav_user", ""))
         davPass.setText(prefs.getString("dav_pass", ""))
 
         demanderPermissions()
 
-        btnTest.setOnClickListener {
-            testerConnexion()
-        }
-
+        btnTest.setOnClickListener { testerConnexion() }
         btnStart.setOnClickListener {
             sauvegarderConfig()
-            val intent = Intent(this, SyncService::class.java)
-            startService(intent)
-            statut.text = "🔄 Surveillance active !\n\n📂 DCIM, Pictures, Movies, Download\n📤 Envoi vers WebDAV automatique"
+            startService(Intent(this, SyncService::class.java))
+            statut.text = "🔄 Surveillance active !\n\n📂 DCIM, Pictures, Movies, Download\n📤 Envoi WebDAV automatique"
         }
     }
 
@@ -84,14 +84,18 @@ class MainActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val sardine: Sardine = OkHttpSardine()
-                sardine.setCredentials(user, pass)
-                val exists = sardine.exists(url)
+                val request = Request.Builder()
+                    .url(url)
+                    .addHeader("Authorization", Credentials.basic(user, pass))
+                    .head()
+                    .build()
+
+                val response = client.newCall(request).execute()
                 withContext(Dispatchers.Main) {
-                    statut.text = if (exists) {
+                    statut.text = if (response.isSuccessful) {
                         "✅ Connexion RÉUSSIE !\n\nServeur WebDAV opérationnel"
                     } else {
-                        "⚠️ Connexion établie mais dossier introuvable"
+                        "⚠️ Réponse : ${response.code} ${response.message}"
                     }
                 }
             } catch (e: Exception) {
